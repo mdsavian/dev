@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# get the script directory
+script_dir=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
+# get the first argument
+filter=""
+# it's a good practice to dry runs to check if the script will work as expected
+dry="0"
+
+
+# Loop through all command-line arguments while there are any remaining ($# = number of arguments)
+while [[ $# > 0 ]]; do
+    if [[ $1 == "--dry" ]]; then
+        dry="1"
+    else
+        filter="$1"
+    fi
+    shift # Move to the next argument
+done
+
+log() {
+    if [[ $dry == "1" ]]; then
+        echo "[DRY_RUN]: $@"
+    else
+        echo "$@"
+    fi
+}
+
+execute() {
+    log "executing: $@"
+
+    if [[ $dry == "1" ]]; then
+        return
+    fi
+
+    "$@"
+}
+
+log "$script_dir -- $filter"
+
+cd $script_dir
+# get all the scripts in the runs directory
+scripts=$(find ./runs -maxdepth 1 -mindepth 1  -type f)
+
+for script in $scripts; do
+    # q meaning "quiet" don't print anything
+    # v meaning matching - containing this value
+    # if this script do contain this filter proceed
+    if echo "$script" | grep -qv "$filter"; then
+        log "filtering $script"
+        continue
+    fi
+
+    execute ./$script
+done
