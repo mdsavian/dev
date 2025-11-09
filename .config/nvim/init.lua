@@ -1,0 +1,1 @@
+print("helllo from init lua")

@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+# set the XDG_CONFIG_HOME environment variable to the home directory/.config
+export XDG_CONFIG_HOME="${HOME}/.config"
+
+# get the script directory
+script_dir=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
+# it's a good practice to dry runs to check if the script will work as expected
+dry="0"
+
+
+# Loop through all command-line arguments while there are any remaining ($# = number of arguments)
+while [[ $# > 0 ]]; do
+    if [[ $1 == "--dry" ]]; then
+        dry="1"
+    fi
+    shift # Move to the next argument
+done
+
+log() {
+    if [[ $dry == "1" ]]; then
+        echo "[DRY_RUN]: $@"
+    else
+        echo "$@"
+    fi
+}
+
+execute() {
+    log "executing: $@"
+
+    if [[ $dry == "1" ]]; then
+        return
+    fi
+
+    "$@"
+}
+
+log "---------- dev-env ----------"
+
+copy_dir() {
+    from=$1
+    to=$2
+
+    # pushd: save current directory to stack and change to $from directory
+    pushd $from > /dev/null
+    dirs=$(find . -mindepth 1 -maxdepth 1 -type d)
+    for dir in $dirs; do
+        execute rm -rf $to/$dir
+        execute cp -r $dir $to/$dir
+    done
+    # popd: return to the previous directory from the stack 
+    popd > /dev/null
+}
+
+copy_file() {
+    from=$1
+    to=$2
+    name=$(basename $from)
+    
+    execute rm $to/$name
+    execute cp $from $to/$name
+}
+
+copy_dir .config $XDG_CONFIG_HOME
+
+copy_file .specialconfig $HOME
